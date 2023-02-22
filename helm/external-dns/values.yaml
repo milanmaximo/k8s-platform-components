@@ -1,0 +1,43 @@
+# Helm values for external-dns
+# Chart version: 1.12.0
+
+provider: cloudflare  # Change to your DNS provider
+
+sources:
+  - ingress
+  - service
+
+policy: sync  # or 'upsert-only'
+
+registry: txt
+txtOwnerId: k8s-platform
+
+interval: 1m
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+
+# Cloudflare specific (example)
+env:
+  - name: CF_API_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: cloudflare-api-token
+        key: token
+
+domainFilters:
+  - example.com  # Change this
+
+rbac:
+  create: true
+
+serviceAccount:
+  create: true
+
+prometheus:
+  enabled: true
