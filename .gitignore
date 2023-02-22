@@ -1,0 +1,29 @@
+# Helm
+charts/*/charts/
+*.tgz
+
+# Kustomize
+.kustomize/
+
+# Kubernetes secrets
+secrets.yaml
+*.secret.yaml
+
+# Terraform state (if used)
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Private
+private/
+AGENTS.md
