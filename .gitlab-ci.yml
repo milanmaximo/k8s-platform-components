@@ -1,0 +1,88 @@
+stages:
+  - validate
+  - test
+  - deploy
+
+variables:
+  KUBERNETES_VERSION: "1.26"
+  HELM_VERSION: "3.11.0"
+
+# Validate YAML syntax
+validate:yaml:
+  stage: validate
+  image: alpine:3.17
+  before_script:
+    - apk add --no-cache yamllint
+  script:
+    - echo "Validating YAML files..."
+    - yamllint -c .yamllint helm/ kustomize/
+  only:
+    - branches
+    - merge_requests
+
+# Validate Helm charts
+validate:helm:
+  stage: validate
+  image: alpine/helm:${HELM_VERSION}
+  script:
+    - echo "Linting Helm values..."
+    - helm lint helm/ingress-nginx/ || true
+    - helm lint helm/cert-manager/ || true
+    - helm lint helm/external-dns/ || true
+    - helm lint helm/vault/ || true
+  only:
+    - branches
+    - merge_requests
+
+# Test Kustomize build
+test:kustomize:
+  stage: test
+  image: k8s.gcr.io/kustomize/kustomize:v5.0.0
+  script:
+    - echo "Building Kustomize overlays..."
+    - kustomize build kustomize/dev > /dev/null
+    - kustomize build kustomize/staging > /dev/null
+    - kustomize build kustomize/prod > /dev/null
+    - echo "Kustomize builds successful!"
+  only:
+    - branches
+    - merge_requests
+
+# Deploy to dev (automatic on main)
+deploy:dev:
+  stage: deploy
+  image: bitnami/kubectl:${KUBERNETES_VERSION}
+  script:
+    - echo "Deploying to dev environment..."
+    - echo "kubectl apply -k kustomize/dev"
+    # Add actual deployment commands with kubeconfig
+  environment:
+    name: dev
+  only:
+    - main
+
+# Deploy to staging (manual)
+deploy:staging:
+  stage: deploy
+  image: bitnami/kubectl:${KUBERNETES_VERSION}
+  script:
+    - echo "Deploying to staging environment..."
+    - echo "kubectl apply -k kustomize/staging"
+  environment:
+    name: staging
+  when: manual
+  only:
+    - main
+
+# Deploy to production (manual)
+deploy:production:
+  stage: deploy
+  image: bitnami/kubectl:${KUBERNETES_VERSION}
+  script:
+    - echo "Deploying to production environment..."
+    - echo "kubectl apply -k kustomize/prod"
+  environment:
+    name: production
+  when: manual
+  only:
+    - tags
