@@ -1,0 +1,36 @@
+# Example ingress with automatic TLS certificate from cert-manager
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: myapp
+  namespace: default
+  annotations:
+    # Use nginx ingress controller
+    kubernetes.io/ingress.class: nginx
+
+    # cert-manager will automatically create certificate
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+
+    # Security headers
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-protocols: "TLSv1.2 TLSv1.3"
+
+    # Rate limiting (10 requests per second)
+    nginx.ingress.kubernetes.io/limit-rps: "10"
+spec:
+  tls:
+    - hosts:
+        - myapp.example.com
+      secretName: myapp-tls  # cert-manager will create this secret
+  rules:
+    - host: myapp.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: myapp
+                port:
+                  number: 80

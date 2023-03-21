@@ -1,0 +1,104 @@
+# Example application with Vault integration
+# This demonstrates how to inject secrets from Vault into a pod
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: myapp
+  namespace: default
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: myapp-vault
+  namespace: default
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: myapp-vault
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: myapp-vault
+subjects:
+  - kind: ServiceAccount
+    name: myapp
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+      annotations:
+        # Enable Vault Agent Injector
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "myapp"
+
+        # Inject database credentials
+        vault.hashicorp.com/agent-inject-secret-db-creds: "secret/data/myapp/database"
+        vault.hashicorp.com/agent-inject-template-db-creds: |
+          {{- with secret "secret/data/myapp/database" -}}
+          export DB_USERNAME="{{ .Data.data.username }}"
+          export DB_PASSWORD="{{ .Data.data.password }}"
+          export DB_HOST="{{ .Data.data.host }}"
+          {{- end }}
+
+        # Inject API keys
+        vault.hashicorp.com/agent-inject-secret-api-key: "secret/data/myapp/api"
+        vault.hashicorp.com/agent-inject-template-api-key: |
+          {{- with secret "secret/data/myapp/api" -}}
+          API_KEY={{ .Data.data.key }}
+          {{- end }}
+    spec:
+      serviceAccountName: myapp
+      containers:
+        - name: app
+          image: busybox:latest
+          command:
+            - sh
+            - -c
+            - |
+              source /vault/secrets/db-creds
+              source /vault/secrets/api-key
+              echo "Database: $DB_USERNAME@$DB_HOST"
+              echo "API Key: $API_KEY"
+              sleep 3600
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp
+  namespace: default
+spec:
+  selector:
+    app: myapp
+  ports:
+    - port: 80
+      targetPort: 8080
