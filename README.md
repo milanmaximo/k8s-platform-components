@@ -91,3 +91,11 @@ GitLab CI pipeline includes:
 ## License
 
 MIT
+
+## Version Compatibility
+
+This repository is tested and compatible with:
+- Kubernetes 1.26.x
+- Kubernetes 1.27.x (Apr 2023 release)
+
+All components are verified against these versions.
