@@ -1,0 +1,9 @@
+# Git attributes for proper language detection
+
+*.yaml linguist-detectable=true
+*.yml linguist-detectable=true
+*.sh linguist-language=Shell
+*.md linguist-documentation
+
+# Exclude from diffs
+*.lock linguist-generated=true
