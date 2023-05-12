@@ -2,6 +2,22 @@
 
 ## Prerequisites
 
+## Prerequisites Check
+
+Before deploying, ensure you have:
+
+```bash
+# Check Kubernetes version
+kubectl version --short
+
+# Check Helm version
+helm version --short
+
+# Verify cluster access
+kubectl cluster-info
+```
+
+
 - Kubernetes 1.26+
 - Helm 3.11+
 - kubectl configured
